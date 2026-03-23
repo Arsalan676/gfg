@@ -4,8 +4,8 @@ import time
 from typing import Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+from django.conf import settings
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_community.tools import TavilySearchResults
 
 from .prompt_templates import SEARCH_QUERY_GENERATION
 
@@ -25,34 +25,42 @@ CREDIBILITY_DOMAINS = {
     'science.org': 0.85,
 }
 
+# Tavily is optional — only imported when TAVILY_API_KEY is present
+def _build_tavily(max_results: int):
+    """Return a TavilySearchResults instance or None if key is not configured."""
+    key = getattr(settings, 'TAVILY_API_KEY', '')
+    if not key:
+        logger.warning("TAVILY_API_KEY not set — evidence search will be skipped. "
+                       "Claims will be marked unverifiable.")
+        return None
+    try:
+        from langchain_community.tools import TavilySearchResults
+        import os
+        os.environ.setdefault('TAVILY_API_KEY', key)
+        return TavilySearchResults(max_results=max_results, search_depth="advanced")
+    except Exception as e:
+        logger.warning(f"Could not initialise Tavily: {e}")
+        return None
+
 
 class EvidenceRetriever:
     def __init__(self, max_workers: int = 5, tavily_max_results: int = 5):
-        """
-        Initialize the evidence retriever.
-
-        Args:
-            max_workers: Max parallel workers for evidence retrieval
-            tavily_max_results: Number of results per Tavily search
-        """
         self.llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro", temperature=0)
-        self.tavily = TavilySearchResults(
-            max_results=tavily_max_results,
-            search_depth="advanced"
-        )
+        self.tavily = _build_tavily(tavily_max_results)
         self.max_workers = max_workers
         self.tavily_call_count = 0
 
+    # ── Query generation ────────────────────────────────────────────────────
+
     def generate_search_queries(self, claim: str) -> Tuple[bool, list[str], str]:
         """
-        Generate optimized search queries for a claim using Gemini.
+        Generate optimised search queries for a claim using Gemini.
 
         Returns:
             tuple: (success: bool, queries: list[str], error_msg: str)
         """
         try:
             logger.info(f"Generating search queries for claim: {claim[:80]}...")
-
             prompt = SEARCH_QUERY_GENERATION.format(claim=claim)
             response = self.llm.invoke([{"role": "user", "content": prompt}])
 
@@ -76,25 +84,29 @@ class EvidenceRetriever:
             logger.warning(f"Search query generation failed: {e}, using claim as fallback")
             return True, [claim], ""
 
+    # ── Credibility scoring ──────────────────────────────────────────────────
+
     def _assess_credibility(self, url: str) -> float:
-        """Return a credibility score (0.0–1.0) for a source URL."""
         url_lower = url.lower()
         for domain, score in CREDIBILITY_DOMAINS.items():
             if domain in url_lower:
                 return score
         return 0.5
 
+    # ── Tavily search ────────────────────────────────────────────────────────
+
     def search_with_retry(self, query: str, max_retries: int = 3) -> Tuple[bool, list[dict], str]:
         """
-        Execute a Tavily search with exponential backoff retry.
-
-        Returns:
-            tuple: (success: bool, results: list[dict], error_msg: str)
+        Execute a Tavily search with exponential back-off.
+        Returns (True, [], "") immediately if Tavily is not configured.
         """
+        if self.tavily is None:
+            logger.info("Tavily not configured — skipping search")
+            return True, [], ""
+
         for attempt in range(max_retries):
             try:
                 logger.info(f"Tavily search (attempt {attempt + 1}/{max_retries}): {query[:60]}...")
-
                 raw_results = self.tavily.invoke({"query": query})
                 self.tavily_call_count += 1
 
@@ -133,8 +145,9 @@ class EvidenceRetriever:
 
         return False, [], "Search failed"
 
+    # ── Deduplication ────────────────────────────────────────────────────────
+
     def deduplicate_results(self, all_results: list[dict]) -> list[dict]:
-        """Deduplicate evidence results by URL."""
         seen_urls: set[str] = set()
         deduped = []
         for result in all_results:
@@ -144,13 +157,20 @@ class EvidenceRetriever:
                 deduped.append(result)
         return deduped
 
+    # ── Public entry point ───────────────────────────────────────────────────
+
     def retrieve_evidence(self, claim: str) -> Tuple[bool, list[dict], str]:
         """
         Generate search queries and retrieve evidence for a claim in parallel.
+        If Tavily is not configured, returns (True, [], "") — claim will be
+        marked unverifiable downstream.
 
         Returns:
             tuple: (success: bool, evidence: list[dict], error_msg: str)
         """
+        if self.tavily is None:
+            return True, [], ""
+
         logger.info(f"Starting evidence retrieval for claim: {claim[:80]}...")
 
         success, queries, error_msg = self.generate_search_queries(claim)

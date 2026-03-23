@@ -7,7 +7,7 @@ google-generativeai
 langchain
 langchain-google-genai
 langchain-community
-tavily-python
+tavily-python       # optional — remove if you don't have a Tavily API key
 trafilatura==1.6.0
 newspaper3k
 python-dotenv==1.0.0
