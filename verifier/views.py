@@ -8,7 +8,19 @@ from rest_framework.views import APIView
 from .models import VerificationJob
 from .pipeline import run_verification_pipeline
 from .rate_limiter import check_rate_limit, get_client_ip
-from .serializers import VerificationJobCreateSerializer, VerificationJobDetailSerializer
+from .serializers import (
+    VerificationJobCreateSerializer,
+    VerificationJobDetailSerializer,
+    VerificationJobListSerializer,
+)
+
+
+class VerificationJobListView(APIView):
+    """GET /api/jobs/ — list all verification jobs, newest first."""
+
+    def get(self, _request):
+        jobs = VerificationJob.objects.order_by('-created_at')
+        return Response(VerificationJobListSerializer(jobs, many=True).data)
 
 
 class VerificationCreateView(APIView):
