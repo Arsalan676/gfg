@@ -1,36 +1,104 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
+import json
+
+from django.http import StreamingHttpResponse
 from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
 from .models import VerificationJob
-from .serializers import VerificationJobDetailSerializer, VerificationJobCreateSerializer
+from .pipeline import run_verification_pipeline
+from .rate_limiter import check_rate_limit, get_client_ip
+from .serializers import VerificationJobCreateSerializer, VerificationJobDetailSerializer
 
 
 class VerificationCreateView(APIView):
-    """POST /api/verify/ — create a new verification job."""
+    """
+    POST /api/verify/
+
+    Accept plain text or a URL, create a VerificationJob, and return the
+    job_id. The client should then open GET /api/jobs/<job_id>/stream/ to
+    receive real-time pipeline updates via SSE.
+    """
 
     def post(self, request):
-        # Full implementation in Phase 6 (pipeline orchestration)
+        ip = get_client_ip(request)
+        if not check_rate_limit(ip):
+            return Response(
+                {'detail': 'Rate limit exceeded. Max 10 requests per minute.'},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+
         serializer = VerificationJobCreateSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        return Response({'detail': 'Not yet implemented'}, status=status.HTTP_501_NOT_IMPLEMENTED)
+
+        job = VerificationJob.objects.create(
+            input_type=serializer.validated_data['input_type'],
+            raw_input=serializer.validated_data['content'],
+            status='pending',
+        )
+
+        return Response(
+            {'job_id': str(job.id), 'status': 'pending'},
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class VerificationDetailView(APIView):
-    """GET /api/jobs/<job_id>/ — retrieve a completed job with its report."""
+    """GET /api/jobs/<job_id>/ — retrieve a completed job with full report."""
 
-    def get(self, request, job_id):
+    def get(self, _request, job_id):
         try:
             job = VerificationJob.objects.get(id=job_id)
         except VerificationJob.DoesNotExist:
             return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
-        serializer = VerificationJobDetailSerializer(job)
-        return Response(serializer.data)
+        return Response(VerificationJobDetailSerializer(job).data)
 
 
 class VerificationStreamView(APIView):
-    """GET /api/jobs/<job_id>/stream/ — SSE stream of pipeline events."""
+    """
+    GET /api/jobs/<job_id>/stream/
 
-    def get(self, _request, _job_id):
-        # Full SSE implementation in Phase 6
-        return Response({'detail': 'Not yet implemented'}, status=status.HTTP_501_NOT_IMPLEMENTED)
+    Opens an SSE connection and runs the full verification pipeline, streaming
+    real-time status events to the client.
+
+    Event types emitted:
+        status          — pipeline stage changes
+        claim_extracted — a new atomic claim was found
+        evidence_found  — search results retrieved for a claim
+        claim_verified  — a claim has been classified with a verdict
+        complete        — pipeline finished; payload is the AccuracyReport summary
+        error           — unrecoverable pipeline failure
+    """
+
+    def get(self, _request, job_id):
+        try:
+            job = VerificationJob.objects.get(id=job_id)
+        except VerificationJob.DoesNotExist:
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # If already complete, stream the final result immediately
+        if job.status == 'complete':
+            def instant_stream():
+                data = VerificationJobDetailSerializer(job).data
+                yield f"event: complete\ndata: {json.dumps(data)}\n\n"
+            response = StreamingHttpResponse(instant_stream(), content_type='text/event-stream')
+            response['Cache-Control'] = 'no-cache'
+            response['X-Accel-Buffering'] = 'no'
+            return response
+
+        if job.status == 'failed':
+            def error_stream():
+                yield f"event: error\ndata: {json.dumps({'message': job.error_message or 'Job failed'})}\n\n"
+            response = StreamingHttpResponse(error_stream(), content_type='text/event-stream')
+            response['Cache-Control'] = 'no-cache'
+            response['X-Accel-Buffering'] = 'no'
+            return response
+
+        response = StreamingHttpResponse(
+            run_verification_pipeline(str(job_id)),
+            content_type='text/event-stream',
+        )
+        response['Cache-Control'] = 'no-cache'
+        response['X-Accel-Buffering'] = 'no'
+        return response

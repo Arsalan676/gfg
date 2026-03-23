@@ -2,7 +2,7 @@ import json
 import logging
 from typing import Tuple
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.output_parsers import PydanticOutputParser
+from langchain_core.output_parsers import PydanticOutputParser
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
