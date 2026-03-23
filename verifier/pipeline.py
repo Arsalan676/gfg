@@ -8,11 +8,12 @@ from django.utils import timezone
 
 from .agents.claim_extractor import extract_claims
 from .agents.evidence_retriever import EvidenceRetriever
+from .agents.image_detector import ImageDetector
 from .agents.report_builder import build_report
 from .agents.url_scraper import extract_text_from_url
 from .agents.verifier_agent import verify_claim
 from .ai_detector import detect_ai_text
-from .models import AccuracyReport, Claim, VerificationJob
+from .models import AccuracyReport, Claim, ImageAnalysis, VerificationJob
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +66,43 @@ def run_verification_pipeline(job_id: str) -> Generator[str, None, None]:
             extracted_text = text
             job.extracted_text = extracted_text
             job.save(update_fields=['extracted_text', 'updated_at'])
+
+            # ── Step 1b: Image detection (URL input only) ────────────────────
+            yield _emit('status', {
+                'status': 'extracting',
+                'message': 'Detecting AI-generated images...',
+            })
+            try:
+                import requests as _requests
+                html_resp = _requests.get(
+                    job.raw_input,
+                    headers={'User-Agent': 'Mozilla/5.0'},
+                    timeout=10,
+                )
+                detector = ImageDetector(min_image_size=100_000, max_images=10)
+                _, img_analyses, _ = detector.detect_images_in_url(
+                    job.raw_input, html_resp.text
+                )
+                for analysis in img_analyses:
+                    with transaction.atomic():
+                        ImageAnalysis.objects.create(
+                            job=job,
+                            image_url=analysis['image_url'],
+                            status=analysis.get('status', 'analyzed'),
+                            is_ai_generated=analysis.get('is_ai_generated'),
+                            confidence=analysis.get('confidence'),
+                            deepfake_probability=analysis.get('deepfake_probability'),
+                            indicators=analysis.get('indicators', []),
+                            skip_reason=analysis.get('skip_reason'),
+                        )
+                    if analysis.get('status') == 'analyzed':
+                        yield _emit('image_analyzed', {
+                            'image_url': analysis['image_url'][:120],
+                            'is_ai_generated': analysis.get('is_ai_generated'),
+                            'confidence': analysis.get('confidence'),
+                        })
+            except Exception as e:
+                logger.warning(f"Image detection failed (non-fatal): {e}")
 
         # ── Step 2: Claim extraction ─────────────────────────────────────────
         job.status = 'extracting'
