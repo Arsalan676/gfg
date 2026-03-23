@@ -1,0 +1,16 @@
+django==4.2.0
+djangorestframework==3.14.0
+django-cors-headers==4.3.0
+# django-eventstream: incompatible with Python 3.14 (cgi module removed).
+# SSE streaming is implemented natively via Django StreamingHttpResponse in Phase 6.
+google-generativeai
+langchain
+langchain-google-genai
+langchain-community
+tavily-python
+trafilatura==1.6.0
+newspaper3k
+python-dotenv==1.0.0
+drf-spectacular==0.26.0
+requests
+beautifulsoup4==4.12.0
