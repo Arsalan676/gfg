@@ -45,7 +45,7 @@ def _build_tavily(max_results: int):
 
 class EvidenceRetriever:
     def __init__(self, max_workers: int = 5, tavily_max_results: int = 5):
-        self.llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro", temperature=0)
+        self.llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0)
         self.tavily = _build_tavily(tavily_max_results)
         self.max_workers = max_workers
         self.tavily_call_count = 0

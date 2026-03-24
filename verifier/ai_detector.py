@@ -93,7 +93,7 @@ def detect_ai_text(text: str) -> dict:
     heuristic_prob, heuristic_indicators = _heuristic_score(text)
 
     try:
-        llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro", temperature=0)
+        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0)
         prompt = AI_TEXT_DETECTION.format(text=text[:3000])
         response = llm.invoke([{"role": "user", "content": prompt}])
 

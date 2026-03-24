@@ -1,6 +1,8 @@
 import json
 
+from django.core.serializers.json import DjangoJSONEncoder
 from django.http import StreamingHttpResponse
+from django.views import View
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -67,33 +69,29 @@ class VerificationDetailView(APIView):
         return Response(VerificationJobDetailSerializer(job).data)
 
 
-class VerificationStreamView(APIView):
+class VerificationStreamView(View):
     """
     GET /api/jobs/<job_id>/stream/
 
-    Opens an SSE connection and runs the full verification pipeline, streaming
-    real-time status events to the client.
-
-    Event types emitted:
-        status          — pipeline stage changes
-        claim_extracted — a new atomic claim was found
-        evidence_found  — search results retrieved for a claim
-        claim_verified  — a claim has been classified with a verdict
-        complete        — pipeline finished; payload is the AccuracyReport summary
-        error           — unrecoverable pipeline failure
+    Plain Django view (bypasses DRF content negotiation) so browsers can open
+    an EventSource with Accept: text/event-stream without getting a 406.
     """
 
     def get(self, _request, job_id):
         try:
             job = VerificationJob.objects.get(id=job_id)
         except VerificationJob.DoesNotExist:
-            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+            def not_found():
+                yield f"event: error\ndata: {json.dumps({'message': 'Job not found'})}\n\n"
+            r = StreamingHttpResponse(not_found(), content_type='text/event-stream')
+            r['Cache-Control'] = 'no-cache'
+            return r
 
         # If already complete, stream the final result immediately
         if job.status == 'complete':
             def instant_stream():
                 data = VerificationJobDetailSerializer(job).data
-                yield f"event: complete\ndata: {json.dumps(data)}\n\n"
+                yield f"event: complete\ndata: {json.dumps(dict(data), cls=DjangoJSONEncoder)}\n\n"
             response = StreamingHttpResponse(instant_stream(), content_type='text/event-stream')
             response['Cache-Control'] = 'no-cache'
             response['X-Accel-Buffering'] = 'no'

@@ -76,7 +76,7 @@ def verify_claim(claim: str, evidence_list: list[dict], max_retries: int = 2) ->
     try:
         logger.info(f"Starting verification for claim: {claim[:80]}...")
 
-        llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro", temperature=0)
+        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0)
 
         evidence_text = "\n".join([
             f"[Source {i + 1}] {e.get('title', 'Untitled')}\n"

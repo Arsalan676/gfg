@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FactGuard AI - Streaming Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary-fixed-dim": "#d2bbff",
+              "outline": "#958da1",
+              "on-secondary-fixed": "#1a1a2e",
+              "surface-container-highest": "#34343d",
+              "on-secondary-container": "#b8b6d0",
+              "inverse-on-surface": "#302f39",
+              "tertiary": "#c5c3e6",
+              "tertiary-container": "#646482",
+              "secondary-container": "#47475d",
+              "on-error-container": "#ffdad6",
+              "on-tertiary-fixed-variant": "#444461",
+              "surface-variant": "#34343d",
+              "on-tertiary-fixed": "#191933",
+              "secondary-fixed": "#e2e0fc",
+              "surface-container-lowest": "#0d0d16",
+              "on-secondary": "#2f2e43",
+              "error-container": "#93000a",
+              "on-secondary-fixed-variant": "#45455b",
+              "on-tertiary": "#2e2e49",
+              "background": "#13131b",
+              "secondary-fixed-dim": "#c6c4df",
+              "secondary": "#c6c4df",
+              "surface-dim": "#13131b",
+              "on-surface-variant": "#ccc3d8",
+              "on-primary-container": "#ede0ff",
+              "on-error": "#690005",
+              "inverse-surface": "#e4e1ed",
+              "tertiary-fixed-dim": "#c5c3e6",
+              "primary": "#d2bbff",
+              "outline-variant": "#4a4455",
+              "on-background": "#e4e1ed",
+              "surface-container-high": "#292932",
+              "tertiary-fixed": "#e2dfff",
+              "surface": "#13131b",
+              "primary-fixed": "#eaddff",
+              "on-surface": "#e4e1ed",
+              "surface-bright": "#393842",
+              "on-tertiary-container": "#e5e3ff",
+              "on-primary-fixed": "#25005a",
+              "primary-container": "#7c3aed",
+              "on-primary-fixed-variant": "#5a00c6",
+              "on-primary": "#3f008e",
+              "surface-tint": "#d2bbff",
+              "surface-container": "#1f1f27",
+              "surface-container-low": "#1b1b23",
+              "error": "#ffb4ab",
+              "inverse-primary": "#732ee4"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .active-glow {
+            box-shadow: 0 0 15px rgba(124, 58, 237, 0.3);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body selection:bg-primary-container/30">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 right-0 z-40 bg-[#13131b]/60 backdrop-blur-xl flex justify-between items-center px-6 py-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#7c3aed]" data-icon="auto_awesome">auto_awesome</span>
+<h1 class="text-lg font-bold font-headline text-[#e4e1ed] tracking-tight">Fact-Check Intelligence</h1>
+</div>
+<div class="flex items-center gap-2">
+<button class="hover:bg-[#34343d] rounded-full p-2 transition-colors">
+<span class="material-symbols-outlined text-[#e4e1ed]/80" data-icon="notifications">notifications</span>
+</button>
+</div>
+</header>
+<main class="pt-24 pb-32 px-5 max-w-md mx-auto space-y-10">
+<!-- Verification Pipeline Stepper -->
+<section class="relative">
+<div class="flex justify-between items-start">
+<div class="flex flex-col items-center gap-2 group">
+<div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container">
+<span class="material-symbols-outlined text-sm" data-icon="check" data-weight="fill" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<span class="text-[10px] font-bold font-headline text-[#e4e1ed]/40 uppercase tracking-tighter">Pending</span>
+</div>
+<div class="h-[2px] mt-4 flex-1 bg-primary-container"></div>
+<div class="flex flex-col items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container">
+<span class="material-symbols-outlined text-sm" data-icon="check" data-weight="fill" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<span class="text-[10px] font-bold font-headline text-[#e4e1ed]/40 uppercase tracking-tighter">Extracting</span>
+</div>
+<div class="h-[2px] mt-4 flex-1 bg-primary-container"></div>
+<div class="flex flex-col items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container active-glow">
+<span class="material-symbols-outlined text-sm animate-pulse" data-icon="search">search</span>
+</div>
+<span class="text-[10px] font-bold font-headline text-[#7c3aed] uppercase tracking-tighter">Searching</span>
+</div>
+<div class="h-[2px] mt-4 flex-1 bg-outline-variant/30"></div>
+<div class="flex flex-col items-center gap-2">
+<div class="w-8 h-8 rounded-full border border-outline-variant/30 flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined text-sm" data-icon="verified_user">verified_user</span>
+</div>
+<span class="text-[10px] font-bold font-headline text-[#e4e1ed]/40 uppercase tracking-tighter">Verifying</span>
+</div>
+<div class="h-[2px] mt-4 flex-1 bg-outline-variant/30"></div>
+<div class="flex flex-col items-center gap-2">
+<div class="w-8 h-8 rounded-full border border-outline-variant/30 flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined text-sm" data-icon="task_alt">task_alt</span>
+</div>
+<span class="text-[10px] font-bold font-headline text-[#e4e1ed]/40 uppercase tracking-tighter">Complete</span>
+</div>
+</div>
+</section>
+<!-- Live Stats Section (Asymmetric Bento Lite) -->
+<section class="grid grid-cols-2 gap-4">
+<!-- Score Ring -->
+<div class="col-span-1 bg-surface-container-low p-5 rounded-2xl flex flex-col items-center justify-center text-center">
+<div class="relative w-20 h-20 mb-3">
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-outline-variant/10" cx="40" cy="40" fill="transparent" r="34" stroke="currentColor" stroke-width="4"></circle>
+<circle class="text-primary-container" cx="40" cy="40" fill="transparent" r="34" stroke="currentColor" stroke-dasharray="213.6" stroke-dashoffset="57.6" stroke-linecap="round" stroke-width="5"></circle>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center">
+<span class="text-lg font-black font-headline text-[#e4e1ed]">73%</span>
+</div>
+</div>
+<span class="text-[11px] font-semibold text-[#e4e1ed]/60 uppercase tracking-widest">Reliability</span>
+</div>
+<!-- AI Meter & Summary -->
+<div class="col-span-1 bg-surface-container-low p-5 rounded-2xl flex flex-col justify-between">
+<div>
+<h3 class="text-[10px] font-bold text-[#e4e1ed]/40 uppercase mb-2 tracking-widest">AI Probability</h3>
+<div class="w-full h-1.5 bg-outline-variant/20 rounded-full overflow-hidden">
+<div class="h-full bg-primary/40 w-[42%]"></div>
+</div>
+<p class="text-[10px] mt-1 text-on-surface-variant font-medium">42% Synthetic likelihood</p>
+</div>
+<div class="pt-4 mt-4 border-t border-outline-variant/10">
+<div class="flex items-center gap-1.5 mb-1">
+<div class="w-2 h-2 rounded-full bg-emerald-500/80"></div>
+<span class="text-[11px] text-[#e4e1ed]/80">True: 8</span>
+</div>
+<div class="flex items-center gap-1.5">
+<div class="w-2 h-2 rounded-full bg-error/80"></div>
+<span class="text-[11px] text-[#e4e1ed]/80">False: 3</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Claims Section -->
+<section class="space-y-6">
+<div class="flex justify-between items-end">
+<h2 class="text-xl font-bold font-headline text-[#e4e1ed]">Claims Found (12)</h2>
+<span class="text-xs text-[#7c3aed] font-medium tracking-tight">Streaming Live...</span>
+</div>
+<div class="space-y-4">
+<!-- Claim Card 1 -->
+<article class="bg-[#1b1b23] p-5 rounded-2xl space-y-4 border border-outline-variant/5">
+<div class="flex justify-between items-start gap-4">
+<p class="text-[15px] leading-relaxed font-medium text-on-surface">"Global core temperatures have stabilized according to recent lunar atmospheric pressure readings."</p>
+<span class="shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-error/10 text-error border border-error/20">False</span>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-[#e4e1ed]/40">
+<span>Confidence</span>
+<span>92%</span>
+</div>
+<div class="w-full h-1 bg-outline-variant/20 rounded-full">
+<div class="h-full bg-primary-container w-[92%]"></div>
+</div>
+</div>
+<div class="flex justify-between items-center pt-2">
+<a class="flex items-center gap-1.5 text-xs text-[#7c3aed] font-semibold" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="link">link</span>
+                            Sources: 4
+                        </a>
+<span class="text-[10px] text-[#e4e1ed]/30 italic">Checked 2m ago</span>
+</div>
+</article>
+<!-- Claim Card 2 -->
+<article class="bg-[#1b1b23] p-5 rounded-2xl space-y-4 border border-outline-variant/5">
+<div class="flex justify-between items-start gap-4">
+<p class="text-[15px] leading-relaxed font-medium text-on-surface">"Economic growth in emerging markets has outperformed the G7 for three consecutive quarters."</p>
+<span class="shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">True</span>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-[#e4e1ed]/40">
+<span>Confidence</span>
+<span>85%</span>
+</div>
+<div class="w-full h-1 bg-outline-variant/20 rounded-full">
+<div class="h-full bg-primary-container w-[85%]"></div>
+</div>
+</div>
+<div class="flex justify-between items-center pt-2">
+<a class="flex items-center gap-1.5 text-xs text-[#7c3aed] font-semibold" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="link">link</span>
+                            Sources: 7
+                        </a>
+<span class="text-[10px] text-[#e4e1ed]/30 italic">Verified</span>
+</div>
+</article>
+</div>
+</section>
+<!-- CTA Simulation -->
+<div class="pt-4">
+<button class="w-full bg-primary-container py-4 rounded-xl font-bold text-on-primary-container flex items-center justify-center gap-2 shadow-lg shadow-primary-container/20 active:scale-95 transition-transform">
+<span>View Full Analysis</span>
+<span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 md:hidden rounded-t-3xl bg-[#0d0d16] flex justify-around items-center h-20 px-4 pb-safe border-t border-[#4a4455]/15">
+<button class="bg-[#7c3aed] text-[#e4e1ed] rounded-2xl px-6 py-2 flex flex-col items-center transition-transform duration-150 scale-95">
+<span class="material-symbols-outlined" data-icon="fact_check" data-weight="fill" style="font-variation-settings: 'FILL' 1;">fact_check</span>
+<span class="text-[10px] font-medium font-body uppercase tracking-widest mt-0.5">Verify</span>
+</button>
+<button class="text-[#e4e1ed]/50 flex flex-col items-center p-2 hover:text-[#7c3aed] transition-colors">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span class="text-[10px] font-medium font-body uppercase tracking-widest mt-0.5">History</span>
+</button>
+<button class="text-[#e4e1ed]/50 flex flex-col items-center p-2 hover:text-[#7c3aed] transition-colors">
+<span class="material-symbols-outlined" data-icon="trending_up">trending_up</span>
+<span class="text-[10px] font-medium font-body uppercase tracking-widest mt-0.5">Trends</span>
+</button>
+<button class="text-[#e4e1ed]/50 flex flex-col items-center p-2 hover:text-[#7c3aed] transition-colors">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+<span class="text-[10px] font-medium font-body uppercase tracking-widest mt-0.5">Profile</span>
+</button>
+</nav>
+</body></html>

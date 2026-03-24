@@ -111,7 +111,7 @@ class ImageDetector:
         try:
             import google.generativeai as genai
             genai.configure(api_key=settings.GEMINI_API_KEY)
-            model = genai.GenerativeModel('gemini-1.5-pro')
+            model = genai.GenerativeModel('gemini-2.5-flash')
 
             mime_type = _detect_mime(image_bytes)
             image_b64 = base64.b64encode(image_bytes).decode('utf-8')

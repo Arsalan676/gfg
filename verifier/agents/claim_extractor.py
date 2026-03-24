@@ -26,7 +26,7 @@ def extract_claims(text: str, max_retries: int = 2) -> Tuple[bool, list[str], st
     try:
         logger.info(f"Starting claim extraction on {len(text)} characters")
 
-        llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro", temperature=0)
+        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0)
         parser = PydanticOutputParser(pydantic_object=ClaimsOutput)
 
         system_prompt = """You are an expert fact-checker. Your task is to identify specific, atomic, falsifiable factual claims from the provided text.
